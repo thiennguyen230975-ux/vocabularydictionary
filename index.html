@@ -1,0 +1,1714 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VocabMind ⚡ Smart Vocabulary Learning Platform</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Be Vietnam Pro', 'Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                        },
+                        emerald: {
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-6px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Third-party Libraries -->
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel standalone for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- SheetJS (xlsx) for Excel import -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- PapaParse for CSV parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* 3D Perspective Card Styles */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.4);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.7);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+
+        // Initial Seed Datasets with rich bilingual content and SRS metadata
+        const INITIAL_DECKS = [
+            {
+                id: 'deck-ielts',
+                title: 'IELTS Academic Core 30',
+                description: 'Từ vựng học thuật tần suất cao dành cho band 7.0+ trong kỳ thi IELTS.',
+                category: 'IELTS',
+                color: 'from-indigo-600 to-violet-600',
+                wordsCount: 10,
+            },
+            {
+                id: 'deck-toeic',
+                title: 'TOEIC Business Communication',
+                description: 'Từ vựng môi trường doanh nghiệp, đàm phán thương mại và tài chính.',
+                category: 'TOEIC',
+                color: 'from-blue-600 to-cyan-600',
+                wordsCount: 10,
+            },
+            {
+                id: 'deck-daily',
+                title: 'Giao Tiếp Hàng Ngày 30',
+                description: 'Mẫu câu và từ vựng thông dụng trong tình huống giao tiếp đời sống.',
+                category: 'General',
+                color: 'from-emerald-600 to-teal-600',
+                wordsCount: 10,
+            }
+        ];
+
+        const INITIAL_WORDS = [
+            // IELTS Deck
+            { id: 'w1', deckId: 'deck-ielts', word: 'Meticulous', ipa: '/məˈtɪk.jə.ləs/', pos: 'adjective', meaning: 'Tỉ mỉ, cẩn thận từng chi tiết nhỏ', example: 'She was meticulous about keeping her research records accurate.', example_translation: 'Cô ấy vô cùng tỉ mỉ trong việc giữ cho ghi chép nghiên cứu chính xác.', memory_tip: 'Liên tưởng đến "metic" (mét) - đo đạc từng mét rất tỉ mỉ.', status: 'review', easeFactor: 2.5, interval: 1, repetition: 1, nextReviewDate: new Date().toISOString(), favorite: true },
+            { id: 'w2', deckId: 'deck-ielts', word: 'Eloquent', ipa: '/ˈel.ə.kwənt/', pos: 'adjective', meaning: 'Hùng hồn, lưu loát, có khả năng diễn đạt tốt', example: 'His eloquent speech touched the hearts of everyone in the audience.', example_translation: 'Bài phát biểu hùng hồn của anh ấy đã chạm đến trái tim khán giả.', memory_tip: 'Âm thanh "el-o-quent" gợi cảm giác phát biểu mượt mà, trôi chảy.', status: 'new', easeFactor: 2.5, interval: 0, repetition: 0, nextReviewDate: new Date().toISOString(), favorite: false },
+            { id: 'w3', deckId: 'deck-ielts', word: 'Pragmatic', ipa: '/præɡˈmæt.ɪk/', pos: 'adjective', meaning: 'Thực tế, thực dụng, trọng hiệu quả', example: 'We need a pragmatic solution to solve the budget deficit.', example_translation: 'Chúng ta cần một giải pháp thực tế để giải quyết thâm hụt ngân sách.', memory_tip: 'Gần giống từ "practice" (thực hành) -> hướng tới hành động thực tế.', status: 'learning', easeFactor: 2.4, interval: 1, repetition: 1, nextReviewDate: new Date().toISOString(), favorite: false },
+            { id: 'w4', deckId: 'deck-ielts', word: 'Resilient', ipa: '/rɪˈzɪl.i.ənt/', pos: 'adjective', meaning: 'Kiên cường, có khả năng phục hồi nhanh', example: 'The local economy proved to be remarkably resilient after the crisis.', example_translation: 'Nền kinh tế địa phương tỏ ra vô cùng kiên cường sau khủng hoảng.', memory_tip: 'Re-silient: bật trở lại vị trí cũ như lò xo.', status: 'mastered', easeFactor: 2.6, interval: 7, repetition: 3, nextReviewDate: new Date(Date.now() + 86400000 * 5).toISOString(), favorite: true },
+            { id: 'w5', deckId: 'deck-ielts', word: 'Ambiguous', ipa: '/æmˈbɪɡ.ju.əs/', pos: 'adjective', meaning: 'Mơ hồ, có thể hiểu theo nhiều nghĩa', example: 'The contract contained ambiguous terms that caused disputes.', example_translation: 'Hợp đồng chứa các điều khoản mơ hồ gây ra tranh chấp.', memory_tip: 'Ambi = hai phía -> lơ lửng ở giữa không rõ ràng.', status: 'new', easeFactor: 2.5, interval: 0, repetition: 0, nextReviewDate: new Date().toISOString(), favorite: false },
+            { id: 'w6', deckId: 'deck-ielts', word: 'Ubiquitous', ipa: '/juːˈbɪk.wɪ.təs/', pos: 'adjective', meaning: 'Có mặt ở khắp mọi nơi, phổ biến', example: 'Smartphones have become ubiquitous in modern society.', example_translation: 'Điện thoại thông minh đã trở nên phổ biến ở khắp mọi nơi.', memory_tip: 'U-bi = You be everywhere (bạn ở đâu cũng thấy).', status: 'new', easeFactor: 2.5, interval: 0, repetition: 0, nextReviewDate: new Date().toISOString(), favorite: false },
+            { id: 'w7', deckId: 'deck-ielts', word: 'Detrimental', ipa: '/ˌdet.rɪˈmen.təl/', pos: 'adjective', meaning: 'Gây hại, có hại', example: 'Excessive sugar intake is detrimental to physical health.', example_translation: 'Nạp quá nhiều đường gây hại cho sức khỏe thể chất.', memory_tip: 'Detri- (destroy) -> phá hủy, tổn hại.', status: 'learning', easeFactor: 2.5, interval: 1, repetition: 1, nextReviewDate: new Date().toISOString(), favorite: false },
+            { id: 'w8', deckId: 'deck-ielts', word: 'Empirical', ipa: '/ɪmˈpɪr.ɪ.kəl/', pos: 'adjective', meaning: 'Dựa trên thực nghiệm, quan sát', example: 'The study relies on empirical evidence rather than theory.', example_translation: 'Nghiên cứu dựa trên bằng chứng thực nghiệm thay vì lý thuyết.', memory_tip: 'Empirical = Empire of experiments (đế chế thực nghiệm).', status: 'new', easeFactor: 2.5, interval: 0, repetition: 0, nextReviewDate: new Date().toISOString(), favorite: false },
+            { id: 'w9', deckId: 'deck-ielts', word: 'Fastidious', ipa: '/fæˈstɪd.i.əs/', pos: 'adjective', meaning: 'Cầu toàn, khó tính, tỉ mẩn', example: 'He was fastidious about maintaining clean equipment.', example_translation: 'Anh ấy rất cầu toàn trong việc bảo dưỡng thiết bị sạch sẽ.', memory_tip: 'Fast + Fastidious = đòi hỏi nhanh và chuẩn xác từng tí.', status: 'new', easeFactor: 2.5, interval: 0, repetition: 0, nextReviewDate: new Date().toISOString(), favorite: false },
+            { id: 'w10', deckId: 'deck-ielts', word: 'Precursor', ipa: '/priːˈkɜː.sər/', pos: 'noun', meaning: 'Tiền đề, người/vật tiên phong', example: 'Biological changes were a precursor to the main symptom.', example_translation: 'Biến đổi sinh học là tiền đề dẫn tới triệu chứng chính.', memory_tip: 'Pre = trước, Cursor = người chạy -> người chạy trước mở đường.', status: 'new', easeFactor: 2.5, interval: 0, repetition: 0, nextReviewDate: new Date().toISOString(), favorite: false },
+
+            // TOEIC Deck
+            { id: 'w11', deckId: 'deck-toeic', word: 'Negotiation', ipa: '/nəˌɡəʊ.ʃiˈeɪ.ʃən/', pos: 'noun', meaning: 'Cuộc đàm phán, sự thương lượng', example: 'The contract was signed after weeks of tough negotiation.', example_translation: 'Hợp đồng đã được ký kết sau nhiều tuần đàm phán gay go.', memory_tip: 'Go-tion -> tiến tới thỏa thuận chung.', status: 'review', easeFactor: 2.5, interval: 1, repetition: 1, nextReviewDate: new Date().toISOString(), favorite: false },
+            { id: 'w12', deckId: 'deck-toeic', word: 'Revenue', ipa: '/ˈrev.ən.juː/', pos: 'noun', meaning: 'Doanh thu, tổng thu nhập', example: 'Annual revenue increased by fifteen percent this quarter.', example_translation: 'Doanh thu hàng năm tăng 15% trong quý này.', memory_tip: 'Return value = doanh thu quay về.', status: 'mastered', easeFactor: 2.7, interval: 7, repetition: 3, nextReviewDate: new Date(Date.now() + 86400000 * 4).toISOString(), favorite: false },
+            { id: 'w13', deckId: 'deck-toeic', word: 'Feasibility', ipa: '/ˌfiː.zəˈbɪl.ə.ti/', pos: 'noun', meaning: 'Tính khả thi, khả năng thực hiện', example: 'We are conducting a feasibility study for the project.', example_translation: 'Chúng tôi đang tiến hành nghiên cứu tính khả thi cho dự án.', memory_tip: 'Feasible = có thể làm được.', status: 'new', easeFactor: 2.5, interval: 0, repetition: 0, nextReviewDate: new Date().toISOString(), favorite: false },
+            { id: 'w14', deckId: 'deck-toeic', word: 'Stakeholder', ipa: '/ˈsteɪkˌhəʊl.də/', pos: 'noun', meaning: 'Bên liên quan, cổ đông, bên có quyền lợi', example: 'All key stakeholders attended the annual board meeting.', example_translation: 'Tất cả các bên liên quan trọng yếu đều tham dự họp HĐQT.', memory_tip: 'Holding stake = giữ quyền lợi trong dự án.', status: 'new', easeFactor: 2.5, interval: 0, repetition: 0, nextReviewDate: new Date().toISOString(), favorite: false },
+            { id: 'w15', deckId: 'deck-toeic', word: 'Compliance', ipa: '/kəmˈplaɪ.əns/', pos: 'noun', meaning: 'Sự tuân thủ quy định, chính sách', example: 'The company operates in full compliance with safety laws.', example_translation: 'Công ty vận hành tuân thủ hoàn toàn luật an toàn.', memory_tip: 'Comply -> compliance (tuân thủ theo lệnh).', status: 'new', easeFactor: 2.5, interval: 0, repetition: 0, nextReviewDate: new Date().toISOString(), favorite: false },
+
+            // Daily Deck
+            { id: 'w16', deckId: 'deck-daily', word: 'Appreciate', ipa: '/əˈpriː.ʃi.eɪt/', pos: 'verb', meaning: 'Trân trọng, cảm kích, đánh giá cao', example: 'I really appreciate all the support you gave me.', example_translation: 'Tôi thực sự rất trân trọng mọi sự hỗ trợ bạn dành cho tôi.', memory_tip: 'Appreciate = Thêm giá trị cho điều tuyệt vời.', status: 'review', easeFactor: 2.5, interval: 1, repetition: 1, nextReviewDate: new Date().toISOString(), favorite: true },
+            { id: 'w17', deckId: 'deck-daily', word: 'Convenient', ipa: '/kənˈviː.ni.ənt/', pos: 'adjective', meaning: 'Tiện lợi, thuận tiện', example: 'It is very convenient to live close to public transport.', example_translation: 'Sống gần phương tiện công cộng vô cùng tiện lợi.', memory_tip: 'Convenient = Convenience store (cửa hàng tiện lợi).', status: 'mastered', easeFactor: 2.8, interval: 10, repetition: 4, nextReviewDate: new Date(Date.now() + 86400000 * 8).toISOString(), favorite: false },
+            { id: 'w18', deckId: 'deck-daily', word: 'Hesitate', ipa: '/ˈhez.ɪ.teɪt/', pos: 'verb', meaning: 'Ngần ngại, do dự', example: 'Do not hesitate to reach out if you have questions.', example_translation: 'Đừng ngần ngại liên hệ nếu bạn có thắc mắc.', memory_tip: 'Hesitate = đứng ngập ngừng ở cửa phòng.', status: 'new', easeFactor: 2.5, interval: 0, repetition: 0, nextReviewDate: new Date().toISOString(), favorite: false }
+        ];
+
+
+        // Web Audio Synthesizer for UI SFX
+        const playSFX = (type) => {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                    osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.12); // E5
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.25);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(130, ctx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.25);
+                } else if (type === 'flip') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(320, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.08);
+                }
+            } catch (e) {
+                console.warn('Audio Context error', e);
+            }
+        };
+
+        // Web Speech API Text-to-Speech
+        const speakWord = (text, lang = 'en-US') => {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = lang;
+                utterance.rate = 0.88;
+                window.speechSynthesis.speak(utterance);
+            }
+        };
+
+        // Smart Dictionary Fallback Rules for raw text import
+        const enrichRawWord = (rawTerm) => {
+            const cleanWord = rawTerm.trim().replace(/[^a-zA-Z\s-]/g, '');
+            if (!cleanWord) return null;
+
+            // Common offline dictionary definitions lookup table
+            const dict = {
+                'innovative': { ipa: '/ˈɪn.ə.və.tɪv/', pos: 'adjective', meaning: 'Sáng tạo, đổi mới', example: 'They developed an innovative software solution.', example_tr: 'Họ đã phát triển một giải pháp phần mềm sáng tạo.' },
+                'collaborate': { ipa: '/kəˈlæb.ə.reɪt/', pos: 'verb', meaning: 'Hợp tác, phối hợp', example: 'Teams collaborate to achieve better results.', example_tr: 'Các đội hợp tác với nhau để đạt kết quả tốt hơn.' },
+                'efficient': { ipa: '/ɪˈfɪʃ.ənt/', pos: 'adjective', meaning: 'Hiệu quả, năng suất cao', example: 'The new engine is extremely fuel efficient.', example_tr: 'Động cơ mới cực kỳ tiết kiệm nhiên liệu.' },
+                'sustainable': { ipa: '/səˈsteɪ.nə.bəl/', pos: 'adjective', meaning: 'Bền vững, phát triển lâu dài', example: 'We must switch to sustainable energy sources.', example_tr: 'Chúng ta phải chuyển sang nguồn năng lượng bền vững.' },
+                'perspective': { ipa: '/pəˈspek.tɪv/', pos: 'noun', meaning: 'Góc nhìn, quan điểm', example: 'Travel gives you a broader perspective on life.', example_tr: 'Du lịch mang lại cho bạn góc nhìn rộng mở hơn về cuộc sống.' },
+            };
+
+            const lower = cleanWord.toLowerCase();
+            if (dict[lower]) {
+                return {
+                    word: cleanWord,
+                    ipa: dict[lower].ipa,
+                    pos: dict[lower].pos,
+                    meaning: dict[lower].meaning,
+                    example: dict[lower].example,
+                    example_translation: dict[lower].example_tr,
+                    memory_tip: 'Từ vựng quan trọng bổ sung tự động vào hệ thống.'
+                };
+            }
+
+            // Fallback smart heuristic rule generator
+            let inferredPos = 'noun';
+            if (lower.endsWith('ly')) inferredPos = 'adverb';
+            else if (lower.endsWith('ive') || lower.endsWith('ic') || lower.endsWith('al') || lower.endsWith('ous') || lower.endsWith('able')) inferredPos = 'adjective';
+            else if (lower.endsWith('ate') || lower.endsWith('ize') || lower.endsWith('ify')) inferredPos = 'verb';
+
+            return {
+                word: cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1),
+                ipa: `/${lower}/`,
+                pos: inferredPos,
+                meaning: `Nghĩa của từ "${cleanWord}" (Được gợi ý tự động)`,
+                example: `This is an example sentence demonstrating the word "${cleanWord}".`,
+                example_translation: `Đây là câu ví dụ minh họa cách dùng từ "${cleanWord}".`,
+                memory_tip: 'Sử dụng kỹ thuật ghi nhớ liên tưởng để học từ này nhanh hơn.'
+            };
+        };
+
+
+        // Clean SVG Icon Component
+        const Icon = ({ name, className = "w-5 h-5" }) => {
+            const icons = {
+                dashboard: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />,
+                flashcard: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />,
+                quiz: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />,
+                decks: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />,
+                import: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />,
+                sun: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />,
+                moon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />,
+                volume: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />,
+                star: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />,
+                check: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />,
+                plus: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />,
+                trash: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />,
+                search: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />,
+                fire: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />,
+                edit: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />,
+                download: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            };
+
+            return (
+                <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    {icons[name] || icons.flashcard}
+                </svg>
+            );
+        };
+
+
+        const App = () => {
+            // Dark Theme State
+            const [isDark, setIsDark] = React.useState(true);
+            const [activeTab, setActiveTab] = React.useState('dashboard'); // dashboard | flashcards | quiz | decks | import | dictionary
+
+            // Storage State
+            const [decks, setDecks] = React.useState(() => {
+                const saved = localStorage.getItem('vocabmind_decks');
+                return saved ? JSON.parse(saved) : INITIAL_DECKS;
+            });
+
+            const [words, setWords] = React.useState(() => {
+                const saved = localStorage.getItem('vocabmind_words');
+                return saved ? JSON.parse(saved) : INITIAL_WORDS;
+            });
+
+            const [userStats, setUserStats] = React.useState(() => {
+                const saved = localStorage.getItem('vocabmind_stats');
+                return saved ? JSON.parse(saved) : { streak: 3, xp: 420, lastActive: new Date().toISOString() };
+            });
+
+            const [selectedDeckId, setSelectedDeckId] = React.useState('all');
+            const [modalState, setModalState] = React.useState({ isOpen: false, type: null, payload: null });
+
+            // Persist to LocalStorage
+            React.useEffect(() => {
+                localStorage.setItem('vocabmind_decks', JSON.stringify(decks));
+            }, [decks]);
+
+            React.useEffect(() => {
+                localStorage.setItem('vocabmind_words', JSON.stringify(words));
+            }, [words]);
+
+            React.useEffect(() => {
+                localStorage.setItem('vocabmind_stats', JSON.stringify(userStats));
+            }, [userStats]);
+
+            // Sync Dark Mode Class to HTML tag
+            React.useEffect(() => {
+                if (isDark) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            }, [isDark]);
+
+            // Add XP Helper
+            const addXP = (amount) => {
+                setUserStats(prev => ({ ...prev, xp: prev.xp + amount }));
+            };
+
+            // Calculate Metrics
+            const totalWords = words.length;
+            const masteredWords = words.filter(w => w.status === 'mastered').length;
+            const dueWords = words.filter(w => {
+                if (w.status === 'new' || w.status === 'learning' || w.status === 'review') return true;
+                return new Date(w.nextReviewDate) <= new Date();
+            }).length;
+
+            return (
+                <div className="flex flex-col min-h-screen transition-colors duration-300">
+
+                    <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 lg:px-8 py-3">
+                        <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+
+                            {/* Brand Logo */}
+                            <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => setActiveTab('dashboard')}>
+                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-brand-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-indigo-500/20 animate-float">
+                                    <span className="text-xl">⚡</span>
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-black tracking-tight bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 bg-clip-text text-transparent">VocabMind</h1>
+                                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase">Spaced Repetition Engine</p>
+                                </div>
+                            </div>
+
+                            {/* Main Navigation Tabs */}
+                            <nav className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-800/60 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700/60">
+                                {[
+                                    { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+                                    { id: 'flashcards', label: 'Flashcards', icon: 'flashcard' },
+                                    { id: 'quiz', label: 'Luyện tập', icon: 'quiz' },
+                                    { id: 'decks', label: 'Bộ từ vựng', icon: 'decks' },
+                                    { id: 'dictionary', label: 'Sổ từ vựng', icon: 'search' },
+                                    { id: 'import', label: 'Import File', icon: 'import' }
+                                ].map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => { setActiveTab(tab.id); playSFX('flip'); }}
+                                        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                            activeTab === tab.id
+                                                ? 'bg-white dark:bg-indigo-600 text-slate-900 dark:text-white shadow-sm'
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                        }`}
+                                    >
+                                        <Icon name={tab.icon} className="w-4 h-4" />
+                                        <span>{tab.label}</span>
+                                    </button>
+                                ))}
+                            </nav>
+
+                            {/* Metrics Badges & Theme Toggle */}
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                {/* Streak Badge */}
+                                <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-full text-xs font-bold text-amber-500" title="Chuỗi ngày học liên tục">
+                                    <Icon name="fire" className="w-4 h-4 text-amber-500" />
+                                    <span>{userStats.streak} ngày</span>
+                                </div>
+
+                                {/* XP Badge */}
+                                <div className="flex items-center gap-1.5 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-full text-xs font-bold text-indigo-500 dark:text-indigo-400" title="Điểm kinh nghiệm tích lũy">
+                                    <Icon name="star" className="w-4 h-4 text-yellow-400" />
+                                    <span>{userStats.xp} XP</span>
+                                </div>
+
+                                {/* Dark Mode Toggle */}
+                                <button
+                                    onClick={() => setIsDark(!isDark)}
+                                    className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+                                    title="Chuyển đổi giao diện Sáng / Tối"
+                                >
+                                    <Icon name={isDark ? 'sun' : 'moon'} className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Mobile Bottom Navigation Bar */}
+                        <div className="flex md:hidden items-center justify-around mt-2 pt-2 border-t border-slate-200 dark:border-slate-800 text-xs">
+                            {[
+                                { id: 'dashboard', label: 'Tổng quan', icon: 'dashboard' },
+                                { id: 'flashcards', label: 'Thẻ học', icon: 'flashcard' },
+                                { id: 'quiz', label: 'Luyện', icon: 'quiz' },
+                                { id: 'decks', label: 'Bộ từ', icon: 'decks' },
+                                { id: 'import', label: 'Import', icon: 'import' }
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex flex-col items-center gap-1 p-1 ${activeTab === tab.id ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-500'}`}
+                                >
+                                    <Icon name={tab.icon} className="w-4 h-4" />
+                                    <span className="text-[10px]">{tab.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </header>
+
+                    <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+                        {activeTab === 'dashboard' && (
+                            <DashboardView
+                                words={words}
+                                decks={decks}
+                                totalWords={totalWords}
+                                masteredWords={masteredWords}
+                                dueWords={dueWords}
+                                streak={userStats.streak}
+                                xp={userStats.xp}
+                                onNavigate={(tab, deckId) => {
+                                    if (deckId) setSelectedDeckId(deckId);
+                                    setActiveTab(tab);
+                                }}
+                                onOpenAddModal={() => setModalState({ isOpen: true, type: 'addWord', payload: null })}
+                            />
+                        )}
+
+                        {activeTab === 'flashcards' && (
+                            <FlashcardsView
+                                words={words}
+                                decks={decks}
+                                selectedDeckId={selectedDeckId}
+                                setSelectedDeckId={setSelectedDeckId}
+                                setWords={setWords}
+                                addXP={addXP}
+                            />
+                        )}
+
+                        {activeTab === 'quiz' && (
+                            <QuizPracticeView
+                                words={words}
+                                decks={decks}
+                                selectedDeckId={selectedDeckId}
+                                setSelectedDeckId={setSelectedDeckId}
+                                addXP={addXP}
+                            />
+                        )}
+
+                        {activeTab === 'decks' && (
+                            <DecksView
+                                decks={decks}
+                                setDecks={setDecks}
+                                words={words}
+                                setWords={setWords}
+                                onStartStudy={(deckId) => {
+                                    setSelectedDeckId(deckId);
+                                    setActiveTab('flashcards');
+                                }}
+                                onOpenAddDeckModal={() => setModalState({ isOpen: true, type: 'addDeck', payload: null })}
+                                onOpenAddWordModal={(deckId) => setModalState({ isOpen: true, type: 'addWord', payload: { deckId } })}
+                            />
+                        )}
+
+                        {activeTab === 'dictionary' && (
+                            <DictionaryView
+                                words={words}
+                                setWords={setWords}
+                                decks={decks}
+                                onEditWord={(word) => setModalState({ isOpen: true, type: 'editWord', payload: word })}
+                            />
+                        )}
+
+                        {activeTab === 'import' && (
+                            <ImportFileView
+                                decks={decks}
+                                setDecks={setDecks}
+                                words={words}
+                                setWords={setWords}
+                                onImportComplete={(deckId) => {
+                                    setSelectedDeckId(deckId);
+                                    setActiveTab('flashcards');
+                                }}
+                            />
+                        )}
+                    </main>
+
+                    {modalState.isOpen && (
+                        <ModalContainer
+                            modalState={modalState}
+                            closeModal={() => setModalState({ isOpen: false, type: null, payload: null })}
+                            decks={decks}
+                            setDecks={setDecks}
+                            words={words}
+                            setWords={setWords}
+                        />
+                    )}
+
+                    <footer className="border-t border-slate-200 dark:border-slate-800/80 py-6 text-center text-xs text-slate-500 dark:text-slate-400">
+                        <p>© 2026 VocabMind — Nền tảng học từ vựng thông dụng Spaced Repetition SRS</p>
+                    </footer>
+                </div>
+            );
+        };
+
+
+        const DashboardView = ({ words, decks, totalWords, masteredWords, dueWords, streak, xp, onNavigate, onOpenAddModal }) => {
+            return (
+                <div className="space-y-8 animate-fadeIn">
+                    {/* Welcome Banner */}
+                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 p-6 sm:p-8 text-white shadow-xl shadow-indigo-500/10">
+                        <div className="relative z-10 space-y-3 max-w-2xl">
+                            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold">
+                                <span>🧠 Thuật toán SRS Spaced Repetition</span>
+                            </div>
+                            <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Chào bạn! Sẵn sàng chinh phục từ vựng hôm nay?</h2>
+                            <p className="text-indigo-100 text-sm">Hệ thống đã tự động tính toán {dueWords} từ vựng cần ôn tập để ghi nhớ dài hạn vào trí nhớ dài hạn.</p>
+
+                            <div className="flex flex-wrap items-center gap-3 pt-2">
+                                <button
+                                    onClick={() => onNavigate('flashcards', 'all')}
+                                    className="bg-white text-indigo-700 hover:bg-slate-100 px-5 py-2.5 rounded-2xl text-sm font-bold shadow-md transition-all active:scale-95 flex items-center gap-2"
+                                >
+                                    <Icon name="flashcard" className="w-4 h-4" />
+                                    <span>Ôn tập ngay ({dueWords} từ)</span>
+                                </button>
+                                <button
+                                    onClick={() => onNavigate('import')}
+                                    className="bg-indigo-800/50 hover:bg-indigo-800 text-white px-4 py-2.5 rounded-2xl text-sm font-bold border border-indigo-400/30 transition-all flex items-center gap-2"
+                                >
+                                    <Icon name="import" className="w-4 h-4" />
+                                    <span>Tải file từ vựng</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Background Decorative Element */}
+                        <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none transform translate-x-10 translate-y-10">
+                            <span className="text-[200px]">⚡</span>
+                        </div>
+                    </div>
+
+                    {/* Overview Stat Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl flex items-center gap-4 shadow-sm">
+                            <div className="p-3 bg-indigo-500/10 text-indigo-500 rounded-xl">
+                                <Icon name="decks" className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <div className="text-2xl font-black text-slate-900 dark:text-white">{totalWords}</div>
+                                <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Tổng số từ vựng</div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl flex items-center gap-4 shadow-sm">
+                            <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl">
+                                <Icon name="check" className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <div className="text-2xl font-black text-slate-900 dark:text-white">{masteredWords}</div>
+                                <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Từ đã thuộc (Mastered)</div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl flex items-center gap-4 shadow-sm">
+                            <div className="p-3 bg-amber-500/10 text-amber-500 rounded-xl">
+                                <Icon name="quiz" className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <div className="text-2xl font-black text-slate-900 dark:text-white">{dueWords}</div>
+                                <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Cần ôn hôm nay (SRS)</div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl flex items-center gap-4 shadow-sm">
+                            <div className="p-3 bg-orange-500/10 text-orange-500 rounded-xl">
+                                <Icon name="fire" className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <div className="text-2xl font-black text-slate-900 dark:text-white">{streak} Ngày</div>
+                                <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Chuỗi học liên tục</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Decks Progress Summary */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Tiến độ theo bộ từ vựng</h3>
+                            <button onClick={() => onNavigate('decks')} className="text-xs font-bold text-indigo-500 hover:text-indigo-600">Xem tất cả bộ từ &rarr;</button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            {decks.map(deck => {
+                                const deckWords = words.filter(w => w.deckId === deck.id);
+                                const masteredInDeck = deckWords.filter(w => w.status === 'mastered').length;
+                                const pct = deckWords.length > 0 ? Math.round((masteredInDeck / deckWords.length) * 100) : 0;
+
+                                return (
+                                    <div key={deck.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                                {deck.category}
+                                            </span>
+                                            <span className="text-xs font-bold text-indigo-500">{deckWords.length} từ</span>
+                                        </div>
+
+                                        <div>
+                                            <h4 className="font-bold text-base text-slate-900 dark:text-white">{deck.title}</h4>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">{deck.description}</p>
+                                        </div>
+
+                                        {/* Progress Bar */}
+                                        <div className="space-y-1.5">
+                                            <div className="flex justify-between text-xs font-semibold">
+                                                <span className="text-slate-500">Thuộc: {masteredInDeck}/{deckWords.length}</span>
+                                                <span className="text-emerald-500">{pct}%</span>
+                                            </div>
+                                            <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                <div className="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all duration-500" style={{ width: `${pct}%` }}></div>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={() => onNavigate('flashcards', deck.id)}
+                                            className="w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all"
+                                        >
+                                            Học bộ này
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+
+        const FlashcardsView = ({ words, decks, selectedDeckId, setSelectedDeckId, setWords, addXP }) => {
+            const [currentIndex, setCurrentIndex] = React.useState(0);
+            const [isFlipped, setIsFlipped] = React.useState(false);
+
+            // Filter cards by selected deck
+            const activeWords = React.useMemo(() => {
+                if (selectedDeckId === 'all') return words;
+                return words.filter(w => w.deckId === selectedDeckId);
+            }, [words, selectedDeckId]);
+
+            const currentWord = activeWords[currentIndex];
+
+            // Keyboard shortcut for card flip and SRS actions
+            React.useEffect(() => {
+                const handleKeyDown = (e) => {
+                    if (e.code === 'Space') {
+                        e.preventDefault();
+                        setIsFlipped(prev => !prev);
+                        playSFX('flip');
+                    }
+                };
+                window.addEventListener('keydown', handleKeyDown);
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }, []);
+
+            // SRS Rating Handler (SuperMemo-2 based)
+            const handleSRSRating = (quality) => {
+                if (!currentWord) return;
+                playSFX(quality >= 3 ? 'correct' : 'wrong');
+
+                let { easeFactor, interval, repetition, status } = currentWord;
+                // Quality: 1 (Again), 2 (Hard), 3 (Good), 4 (Easy)
+                if (quality === 1) { // Again
+                    repetition = 0;
+                    interval = 0;
+                    status = 'learning';
+                } else if (quality === 2) { // Hard
+                    repetition += 1;
+                    interval = 1;
+                    status = 'review';
+                } else if (quality === 3) { // Good
+                    repetition += 1;
+                    interval = interval === 0 ? 1 : interval === 1 ? 3 : Math.round(interval * easeFactor);
+                    status = 'review';
+                } else if (quality === 4) { // Easy
+                    repetition += 1;
+                    interval = interval === 0 ? 3 : Math.round(interval * easeFactor * 1.3);
+                    status = 'mastered';
+                }
+
+                // Update next review date
+                const nextDate = new Date();
+                nextDate.setDate(nextDate.getDate() + interval);
+
+                setWords(prev => prev.map(w => w.id === currentWord.id ? {
+                    ...w,
+                    easeFactor,
+                    interval,
+                    repetition,
+                    status,
+                    nextReviewDate: nextDate.toISOString()
+                } : w));
+
+                addXP(quality * 5);
+
+                // Move to next card
+                setIsFlipped(false);
+                if (currentIndex < activeWords.length - 1) {
+                    setCurrentIndex(prev => prev + 1);
+                } else {
+                    setCurrentIndex(0);
+                }
+            };
+
+            const toggleFavorite = (e) => {
+                e.stopPropagation();
+                if (!currentWord) return;
+                setWords(prev => prev.map(w => w.id === currentWord.id ? { ...w, favorite: !w.favorite } : w));
+            };
+
+            if (!currentWord) {
+                return (
+                    <div className="text-center py-16 space-y-4">
+                        <div className="text-4xl">🎉</div>
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white">Không có từ vựng nào trong danh sách học!</h3>
+                        <p className="text-slate-500 text-sm">Vui lòng chọn bộ từ vựng khác hoặc tải thêm file từ vựng mới.</p>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn">
+                    {/* Top Controls & Deck Selector */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <select
+                            value={selectedDeckId}
+                            onChange={(e) => { setSelectedDeckId(e.target.value); setCurrentIndex(0); setIsFlipped(false); }}
+                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-indigo-500 w-full sm:w-auto"
+                        >
+                            <option value="all">📚 Tất cả từ vựng ({words.length})</option>
+                            {decks.map(d => (
+                                <option key={d.id} value={d.id}>{d.title} ({words.filter(w => w.deckId === d.id).length})</option>
+                            ))}
+                        </select>
+
+                        <div className="text-xs font-bold text-slate-500">
+                            Thẻ <span className="text-indigo-500">{currentIndex + 1}</span> / {activeWords.length}
+                        </div>
+                    </div>
+
+                    {/* Session Progress Bar */}
+                    <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                            className="h-full bg-indigo-500 transition-all duration-300"
+                            style={{ width: `${((currentIndex + 1) / activeWords.length) * 100}%` }}
+                        ></div>
+                    </div>
+
+                    {/* 3D Flip Card Container */}
+                    <div
+                        onClick={() => { setIsFlipped(!isFlipped); playSFX('flip'); }}
+                        className="perspective-1000 w-full h-96 cursor-pointer select-none"
+                    >
+                        <div className={`transform-style-3d relative w-full h-full rounded-3xl transition-transform duration-500 shadow-2xl ${isFlipped ? 'rotate-y-180' : ''}`}>
+
+                            {/* Card Front */}
+                            <div className="backface-hidden absolute inset-0 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-indigo-500/30 rounded-3xl p-8 flex flex-col justify-between items-center text-center shadow-xl">
+                                <div className="w-full flex justify-between items-center">
+                                    <span className="text-xs font-bold px-3 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+                                        {currentWord.pos || 'vocabulary'}
+                                    </span>
+                                    <button onClick={toggleFavorite} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                                        <Icon name="star" className={`w-5 h-5 ${currentWord.favorite ? 'text-amber-400 fill-amber-400' : 'text-slate-400'}`} />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <h3 className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-wide">{currentWord.word}</h3>
+                                    <div className="flex items-center justify-center gap-2 text-slate-500 font-mono text-base">
+                                        <span>{currentWord.ipa}</span>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); speakWord(currentWord.word); }}
+                                            className="p-2 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:scale-110 transition"
+                                        >
+                                            <Icon name="volume" className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="text-xs font-medium text-slate-400 flex items-center gap-1">
+                                    <span>💡 Nhấn thẻ hoặc Spacebar để lật xem nghĩa</span>
+                                </div>
+                            </div>
+
+                            {/* Card Back */}
+                            <div className="backface-hidden rotate-y-180 absolute inset-0 bg-white dark:bg-slate-900 border-2 border-indigo-500 dark:border-indigo-500/50 rounded-3xl p-8 flex flex-col justify-between items-center text-center shadow-2xl">
+                                <div className="w-full flex justify-end">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); speakWord(currentWord.word); }}
+                                        className="p-2 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:scale-110 transition"
+                                    >
+                                        <Icon name="volume" className="w-4 h-4" />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-4 max-w-md">
+                                    <div className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{currentWord.meaning}</div>
+
+                                    {currentWord.example && (
+                                        <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 italic bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/50 space-y-1">
+                                            <p className="font-semibold text-slate-800 dark:text-slate-200">"{currentWord.example}"</p>
+                                            <p className="text-slate-500 dark:text-slate-400 font-normal">{currentWord.example_translation}</p>
+                                        </div>
+                                    )}
+
+                                    {currentWord.memory_tip && (
+                                        <div className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-500/20">
+                                            💡 Mẹo nhớ: {currentWord.memory_tip}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="text-xs text-slate-400">Đánh giá mức độ nhớ của bạn bên dưới</div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    {/* SRS Rating Action Buttons */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2">
+                        <button
+                            onClick={() => handleSRSRating(1)}
+                            className="flex flex-col items-center justify-center p-3 rounded-2xl bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 transition"
+                        >
+                            <span className="font-bold text-xs">🔴 Chưa thuộc</span>
+                            <span className="text-[10px] text-red-400 mt-0.5">Lặp lại ngay</span>
+                        </button>
+
+                        <button
+                            onClick={() => handleSRSRating(2)}
+                            className="flex flex-col items-center justify-center p-3 rounded-2xl bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 border border-amber-200 dark:border-amber-500/30 text-amber-600 dark:text-amber-400 transition"
+                        >
+                            <span className="font-bold text-xs">🟠 Khó</span>
+                            <span className="text-[10px] text-amber-400 mt-0.5">Ôn lại sau 1 ngày</span>
+                        </button>
+
+                        <button
+                            onClick={() => handleSRSRating(3)}
+                            className="flex flex-col items-center justify-center p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 transition"
+                        >
+                            <span className="font-bold text-xs">🟢 Tốt</span>
+                            <span className="text-[10px] text-emerald-400 mt-0.5">Ôn lại sau 3 ngày</span>
+                        </button>
+
+                        <button
+                            onClick={() => handleSRSRating(4)}
+                            className="flex flex-col items-center justify-center p-3 rounded-2xl bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 border border-blue-200 dark:border-blue-500/30 text-blue-600 dark:text-blue-400 transition"
+                        >
+                            <span className="font-bold text-xs">🔵 Rất dễ</span>
+                            <span className="text-[10px] text-blue-400 mt-0.5">Ôn lại sau 7 ngày</span>
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+
+        const QuizPracticeView = ({ words, decks, selectedDeckId, setSelectedDeckId, addXP }) => {
+            const [mode, setMode] = React.useState('choice'); // choice | fill | dictation
+            const [quizIndex, setQuizIndex] = React.useState(0);
+            const [score, setScore] = React.useState(0);
+            const [combo, setCombo] = React.useState(0);
+            const [userAnswer, setUserAnswer] = React.useState('');
+            const [selectedOption, setSelectedOption] = React.useState(null);
+            const [isSubmitted, setIsSubmitted] = React.useState(false);
+
+            const activeWords = React.useMemo(() => {
+                const list = selectedDeckId === 'all' ? words : words.filter(w => w.deckId === selectedDeckId);
+                return [...list].sort(() => 0.5 - Math.random());
+            }, [words, selectedDeckId]);
+
+            const current = activeWords[quizIndex];
+
+            // Generate 4 Multiple Choice Options
+            const choiceOptions = React.useMemo(() => {
+                if (!current) return [];
+                const correct = current.meaning;
+                const others = words.filter(w => w.meaning !== correct).map(w => w.meaning);
+                const shuffledOthers = [...others].sort(() => 0.5 - Math.random()).slice(0, 3);
+                return [...shuffledOthers, correct].sort(() => 0.5 - Math.random());
+            }, [current, words]);
+
+            const handleAnswerSubmit = (selectedChoice) => {
+                if (isSubmitted || !current) return;
+                setIsSubmitted(true);
+
+                let isCorrect = false;
+                if (mode === 'choice') {
+                    setSelectedOption(selectedChoice);
+                    isCorrect = (selectedChoice === current.meaning);
+                } else {
+                    isCorrect = (userAnswer.trim().toLowerCase() === current.word.toLowerCase());
+                }
+
+                if (isCorrect) {
+                    playSFX('correct');
+                    const bonus = combo * 2;
+                    setScore(prev => prev + 10 + bonus);
+                    setCombo(prev => prev + 1);
+                    addXP(15);
+                } else {
+                    playSFX('wrong');
+                    setCombo(0);
+                }
+
+                setTimeout(() => {
+                    setIsSubmitted(false);
+                    setSelectedOption(null);
+                    setUserAnswer('');
+                    if (quizIndex < activeWords.length - 1) {
+                        setQuizIndex(prev => prev + 1);
+                    } else {
+                        // Complete Session Confetti
+                        if (window.confetti) {
+                            window.confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                        }
+                    }
+                }, 1400);
+            };
+
+            if (!current) {
+                return (
+                    <div className="text-center py-16">
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white">Hãy chọn bộ từ vựng để bắt đầu luyện tập!</h3>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn">
+                    {/* Mode Selectors */}
+                    <div className="flex items-center justify-between gap-2 bg-slate-100 dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800">
+                        {[
+                            { id: 'choice', label: 'Trắc nghiệm' },
+                            { id: 'fill', label: 'Điền câu' },
+                            { id: 'dictation', label: 'Nghe & Gõ' }
+                        ].map(m => (
+                            <button
+                                key={m.id}
+                                onClick={() => { setMode(m.id); setQuizIndex(0); setCombo(0); setScore(0); }}
+                                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                                    mode === m.id
+                                        ? 'bg-indigo-600 text-white shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                                }`}
+                            >
+                                {m.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Quiz Scoreboard Banner */}
+                    <div className="flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl">
+                        <div className="text-xs font-bold text-slate-500">
+                            Câu <span className="text-indigo-500">{quizIndex + 1}</span> / {activeWords.length}
+                        </div>
+                        <div className="flex items-center gap-4 text-xs font-bold">
+                            <span className="text-amber-500">🔥 Combo: x{combo}</span>
+                            <span className="text-emerald-500">⭐ Điểm: {score}</span>
+                        </div>
+                    </div>
+
+                    {/* Quiz Body Card */}
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 text-center shadow-xl">
+
+                        {/* MODE 1: TRẮC NGHIỆM */}
+                        {mode === 'choice' && (
+                            <div className="space-y-6">
+                                <span className="inline-block px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold">
+                                    Chọn nghĩa tiếng Việt đúng
+                                </span>
+                                <h3 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white">{current.word}</h3>
+                                <p className="text-sm font-mono text-slate-400">{current.ipa}</p>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left pt-2">
+                                    {choiceOptions.map((option, idx) => {
+                                        let btnStyle = 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200';
+                                        if (isSubmitted) {
+                                            if (option === current.meaning) {
+                                                btnStyle = 'bg-emerald-600 text-white border-emerald-500';
+                                            } else if (option === selectedOption) {
+                                                btnStyle = 'bg-red-600 text-white border-red-500';
+                                            }
+                                        }
+
+                                        return (
+                                            <button
+                                                key={idx}
+                                                disabled={isSubmitted}
+                                                onClick={() => handleAnswerSubmit(option)}
+                                                className={`p-4 rounded-2xl border text-sm font-bold transition-all flex items-center justify-between ${btnStyle}`}
+                                            >
+                                                <span>{option}</span>
+                                                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700">{String.fromCharCode(65 + idx)}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* MODE 2: ĐIỀN TỪ VÀO CÂU VÍ DỤ */}
+                        {mode === 'fill' && (
+                            <div className="space-y-6">
+                                <span className="inline-block px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold">
+                                    Điền từ tiếng Anh thích hợp vào ô trống
+                                </span>
+                                <div className="text-lg font-bold text-slate-800 dark:text-slate-200 italic bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl">
+                                    "{current.example ? current.example.replace(new RegExp(current.word, 'gi'), '_______') : '_______'}"
+                                </div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Nghĩa tiếng Việt: {current.meaning}</p>
+
+                                <form onSubmit={(e) => { e.preventDefault(); handleAnswerSubmit(); }} className="space-y-4 max-w-md mx-auto">
+                                    <input
+                                        type="text"
+                                        value={userAnswer}
+                                        onChange={(e) => setUserAnswer(e.target.value)}
+                                        placeholder="Nhập từ tiếng Anh chính xác..."
+                                        className="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 rounded-2xl px-5 py-3 text-center text-lg font-bold text-slate-900 dark:text-white outline-none focus:border-indigo-500"
+                                    />
+                                    <button
+                                        type="submit"
+                                        className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-sm font-bold transition shadow-lg shadow-indigo-600/20"
+                                    >
+                                        Kiểm tra đáp án
+                                    </button>
+                                </form>
+                            </div>
+                        )}
+
+                        {/* MODE 3: NGHE VÀ GÕ TỪ (DICTATION) */}
+                        {mode === 'dictation' && (
+                            <div className="space-y-6">
+                                <span className="inline-block px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+                                    Luyện nghe phát âm & gõ chính tả
+                                </span>
+
+                                <div className="py-4">
+                                    <button
+                                        onClick={() => speakWord(current.word)}
+                                        className="p-5 rounded-full bg-indigo-600 text-white hover:scale-110 shadow-lg shadow-indigo-600/30 transition mx-auto"
+                                    >
+                                        <Icon name="volume" className="w-8 h-8" />
+                                    </button>
+                                    <p className="text-xs text-slate-400 mt-2">Nhấn để nghe lại phát âm</p>
+                                </div>
+
+                                <p className="text-xs text-slate-500">Gợi ý nghĩa: {current.meaning}</p>
+
+                                <form onSubmit={(e) => { e.preventDefault(); handleAnswerSubmit(); }} className="space-y-4 max-w-md mx-auto">
+                                    <input
+                                        type="text"
+                                        value={userAnswer}
+                                        onChange={(e) => setUserAnswer(e.target.value)}
+                                        placeholder="Gõ từ bạn nghe được..."
+                                        className="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 rounded-2xl px-5 py-3 text-center text-lg font-bold text-slate-900 dark:text-white outline-none focus:border-indigo-500"
+                                    />
+                                    <button
+                                        type="submit"
+                                        className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-sm font-bold transition shadow-lg shadow-emerald-600/20"
+                                    >
+                                        Xác nhận
+                                    </button>
+                                </form>
+                            </div>
+                        )}
+
+                    </div>
+                </div>
+            );
+        };
+
+
+        const DecksView = ({ decks, setDecks, words, setWords, onStartStudy, onOpenAddDeckModal, onOpenAddWordModal }) => {
+
+            // Export deck to JSON
+            const exportDeckJSON = (deck) => {
+                const deckWords = words.filter(w => w.deckId === deck.id);
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ deck, words: deckWords }, null, 2));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                downloadAnchor.setAttribute("download", `${deck.title.replace(/\s+/g, '_')}_VocabMind.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+            };
+
+            return (
+                <div className="space-y-6 animate-fadeIn">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <h2 className="text-2xl font-black text-slate-900 dark:text-white">Bộ Từ Vựng Của Bạn</h2>
+                            <p className="text-xs text-slate-500">Quản lý các chủ đề từ vựng và xuất dữ liệu khi cần</p>
+                        </div>
+
+                        <button
+                            onClick={onOpenAddDeckModal}
+                            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-2xl text-xs font-bold transition shadow-md shadow-indigo-600/20"
+                        >
+                            <Icon name="plus" className="w-4 h-4" />
+                            <span>Tạo bộ từ mới</span>
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        {decks.map(deck => {
+                            const deckWords = words.filter(w => w.deckId === deck.id);
+
+                            return (
+                                <div key={deck.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 space-y-5 flex flex-col justify-between shadow-sm">
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                                                {deck.category}
+                                            </span>
+                                            <button
+                                                onClick={() => exportDeckJSON(deck)}
+                                                className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                                                title="Xuất bộ từ này ra file JSON"
+                                            >
+                                                <Icon name="download" className="w-4 h-4" />
+                                            </button>
+                                        </div>
+
+                                        <h3 className="text-xl font-bold text-slate-900 dark:text-white">{deck.title}</h3>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">{deck.description}</p>
+                                    </div>
+
+                                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
+                                        <span className="font-bold text-slate-600 dark:text-slate-400">{deckWords.length} từ vựng</span>
+
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => onOpenAddWordModal(deck.id)}
+                                                className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-200 transition"
+                                            >
+                                                + Thêm từ
+                                            </button>
+                                            <button
+                                                onClick={() => onStartStudy(deck.id)}
+                                                className="px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-500 transition shadow-sm"
+                                            >
+                                                Học ngay
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        const DictionaryView = ({ words, setWords, decks, onEditWord }) => {
+            const [search, setSearch] = React.useState('');
+            const [filterStatus, setFilterStatus] = React.useState('all');
+
+            const filteredWords = words.filter(w => {
+                const matchesSearch = w.word.toLowerCase().includes(search.toLowerCase()) || w.meaning.toLowerCase().includes(search.toLowerCase());
+                if (!matchesSearch) return false;
+                if (filterStatus === 'favorite') return w.favorite;
+                if (filterStatus === 'mastered') return w.status === 'mastered';
+                return true;
+            });
+
+            const deleteWord = (id) => {
+                if (confirm('Bạn có chắc chắn muốn xóa từ vựng này?')) {
+                    setWords(prev => prev.filter(w => w.id !== id));
+                }
+            };
+
+            return (
+                <div className="space-y-6 animate-fadeIn">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <h2 className="text-2xl font-black text-slate-900 dark:text-white">Sổ Từ Vựng Cá Nhân</h2>
+                            <p className="text-xs text-slate-500">Tra cứu, sắp xếp và chỉnh sửa toàn bộ các từ vựng đã lưu</p>
+                        </div>
+
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                            <div className="relative flex-1 sm:w-64">
+                                <Icon name="search" className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                                <input
+                                    type="text"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Tìm từ vựng..."
+                                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs font-bold text-slate-800 dark:text-white outline-none focus:border-indigo-500"
+                                />
+                            </div>
+
+                            <select
+                                value={filterStatus}
+                                onChange={(e) => setFilterStatus(e.target.value)}
+                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none"
+                            >
+                                <option value="all">Tất cả từ</option>
+                                <option value="favorite">⭐ Yêu thích</option>
+                                <option value="mastered">✅ Đã thuộc</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Table View */}
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-[11px] font-bold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
+                                        <th className="p-4">Từ tiếng Anh</th>
+                                        <th className="p-4">Nghĩa tiếng Việt</th>
+                                        <th className="p-4">Bộ từ</th>
+                                        <th className="p-4 text-center">Trạng thái</th>
+                                        <th className="p-4 text-right">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
+                                    {filteredWords.map(w => {
+                                        const deck = decks.find(d => d.id === w.deckId);
+
+                                        return (
+                                            <tr key={w.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                                                <td className="p-4 font-bold text-slate-900 dark:text-white">
+                                                    <div className="flex items-center gap-2">
+                                                        <span>{w.word}</span>
+                                                        <button onClick={() => speakWord(w.word)} className="p-1 rounded text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/20">
+                                                            <Icon name="volume" className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-400 font-mono">{w.ipa}</div>
+                                                </td>
+                                                <td className="p-4 text-slate-700 dark:text-slate-300">{w.meaning}</td>
+                                                <td className="p-4 text-slate-500">{deck ? deck.title : 'General'}</td>
+                                                <td className="p-4 text-center">
+                                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                                                        w.status === 'mastered'
+                                                            ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                                                    }`}>
+                                                        {w.status === 'mastered' ? 'Đã thuộc' : 'Đang học'}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-right">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <button onClick={() => onEditWord(w)} className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800">
+                                                            <Icon name="edit" className="w-4 h-4" />
+                                                        </button>
+                                                        <button onClick={() => deleteWord(w.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800">
+                                                            <Icon name="trash" className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+
+        const ImportFileView = ({ decks, setDecks, words, setWords, onImportComplete }) => {
+            const [parsedPreview, setParsedPreview] = React.useState([]);
+            const [targetDeckId, setTargetDeckId] = React.useState(decks[0]?.id || '');
+            const [newDeckTitle, setNewDeckTitle] = React.useState('');
+            const [searchTerm, setSearchTerm] = React.useState('');
+            const [isParsing, setIsParsing] = React.useState(false);
+
+            // Handle Drag & Drop File Parser
+            const processFile = (file) => {
+                setIsParsing(true);
+                const fileName = file.name.toLowerCase();
+
+                if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                        parseRawRows(jsonData);
+                    };
+                    reader.readAsArrayBuffer(file);
+                } else if (fileName.endsWith('.csv') || fileName.endsWith('.txt')) {
+                    Papa.parse(file, {
+                        complete: (results) => {
+                            parseRawRows(results.data);
+                        }
+                    });
+                }
+            };
+
+            const parseRawRows = (rows) => {
+                let items = [];
+                // Check if structured headers exist
+                if (rows.length > 0 && rows[0].length > 1) {
+                    const headers = rows[0].map(h => String(h).toLowerCase().trim());
+                    const wordIdx = headers.findIndex(h => h.includes('word') || h.includes('term') || h.includes('từ'));
+                    const meaningIdx = headers.findIndex(h => h.includes('meaning') || h.includes('definition') || h.includes('nghĩa'));
+                    const ipaIdx = headers.findIndex(h => h.includes('ipa') || h.includes('phonetic') || h.includes('phiên âm'));
+                    const exampleIdx = headers.findIndex(h => h.includes('example') || h.includes('ví dụ'));
+
+                    for (let i = 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        if (!row || row.length === 0) continue;
+                        const wordStr = row[wordIdx >= 0 ? wordIdx : 0];
+                        if (!wordStr) continue;
+
+                        const enriched = enrichRawWord(String(wordStr));
+                        if (enriched) {
+                            if (meaningIdx >= 0 && row[meaningIdx]) enriched.meaning = String(row[meaningIdx]);
+                            if (ipaIdx >= 0 && row[ipaIdx]) enriched.ipa = String(row[ipaIdx]);
+                            if (exampleIdx >= 0 && row[exampleIdx]) enriched.example = String(row[exampleIdx]);
+                            items.push({ ...enriched, selected: true, id: `imp-${Date.now()}-${i}` });
+                        }
+                    }
+                } else {
+                    // Raw single column list of English words (one per line)
+                    rows.forEach((row, i) => {
+                        if (row && row[0]) {
+                            const enriched = enrichRawWord(String(row[0]));
+                            if (enriched) {
+                                items.push({ ...enriched, selected: true, id: `imp-${Date.now()}-${i}` });
+                            }
+                        }
+                    });
+                }
+
+                setParsedPreview(items);
+                setIsParsing(false);
+            };
+
+            const handleConfirmImport = () => {
+                let activeDeck = targetDeckId;
+
+                // Create new deck if chosen
+                if (targetDeckId === 'new') {
+                    if (!newDeckTitle.trim()) {
+                        alert('Vui lòng nhập tên bộ từ mới!');
+                        return;
+                    }
+                    const newDeck = {
+                        id: `deck-${Date.now()}`,
+                        title: newDeckTitle.trim(),
+                        description: 'Bộ từ vựng được import từ file',
+                        category: 'Imported',
+                        color: 'from-purple-600 to-indigo-600'
+                    };
+                    setDecks(prev => [...prev, newDeck]);
+                    activeDeck = newDeck.id;
+                }
+
+                const selectedItems = parsedPreview.filter(item => item.selected).map(item => ({
+                    id: `w-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                    deckId: activeDeck,
+                    word: item.word,
+                    ipa: item.ipa,
+                    pos: item.pos,
+                    meaning: item.meaning,
+                    example: item.example,
+                    example_translation: item.example_translation,
+                    memory_tip: item.memory_tip,
+                    status: 'new',
+                    easeFactor: 2.5,
+                    interval: 0,
+                    repetition: 0,
+                    nextReviewDate: new Date().toISOString(),
+                    favorite: false
+                }));
+
+                setWords(prev => [...prev, ...selectedItems]);
+                if (window.confetti) window.confetti();
+                onImportComplete(activeDeck);
+            };
+
+            return (
+                <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn">
+                    <div>
+                        <h2 className="text-2xl font-black text-slate-900 dark:text-white">Import File Từ Vựng Thông Minh</h2>
+                        <p className="text-xs text-slate-500">Hỗ trợ file CSV, XLSX, hoặc danh sách từ thô (tự động điền phiên âm IPA, từ loại và ví dụ)</p>
+                    </div>
+
+                    {/* Drag and Drop Zone */}
+                    <div
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); }}
+                        className="border-2 border-dashed border-slate-300 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-500 rounded-3xl p-8 text-center bg-white dark:bg-slate-900 transition cursor-pointer space-y-4"
+                    >
+                        <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 flex items-center justify-center mx-auto">
+                            <Icon name="import" className="w-8 h-8" />
+                        </div>
+
+                        <div className="space-y-1">
+                            <h4 className="font-bold text-base text-slate-800 dark:text-white">Kéo thả file vào đây hoặc nhấn để chọn file</h4>
+                            <p className="text-xs text-slate-400">Định dạng hỗ trợ: .CSV, .XLSX, .TXT (Tối đa 500 từ)</p>
+                        </div>
+
+                        <input
+                            type="file"
+                            accept=".csv, .xlsx, .xls, .txt"
+                            onChange={(e) => { if (e.target.files[0]) processFile(e.target.files[0]); }}
+                            className="hidden"
+                            id="file-input-field"
+                        />
+                        <label htmlFor="file-input-field" className="inline-block px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-xs font-bold transition cursor-pointer">
+                            Chọn File từ máy tính
+                        </label>
+                    </div>
+
+                    {/* Preview Section */}
+                    {parsedPreview.length > 0 && (
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 space-y-5 shadow-xl">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+                                <h3 className="font-bold text-lg text-slate-900 dark:text-white">Xem trước danh sách ({parsedPreview.filter(i => i.selected).length} từ)</h3>
+
+                                <div className="flex items-center gap-3 w-full sm:w-auto">
+                                    <select
+                                        value={targetDeckId}
+                                        onChange={(e) => setTargetDeckId(e.target.value)}
+                                        className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-white outline-none"
+                                    >
+                                        {decks.map(d => <option key={d.id} value={d.id}>Thêm vào: {d.title}</option>)}
+                                        <option value="new">+ Tạo bộ từ mới...</option>
+                                    </select>
+
+                                    {targetDeckId === 'new' && (
+                                        <input
+                                            type="text"
+                                            value={newDeckTitle}
+                                            onChange={(e) => setNewDeckTitle(e.target.value)}
+                                            placeholder="Tên bộ từ mới..."
+                                            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-white outline-none"
+                                        />
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Preview Table */}
+                            <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 pr-1">
+                                {parsedPreview.map((item, idx) => (
+                                    <div key={item.id} className="py-3 flex items-center justify-between gap-4 text-xs">
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="checkbox"
+                                                checked={item.selected}
+                                                onChange={() => {
+                                                    setParsedPreview(prev => prev.map((it, i) => i === idx ? { ...it, selected: !it.selected } : it));
+                                                }}
+                                                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                                            />
+                                            <div>
+                                                <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                    <span>{item.word}</span>
+                                                    <span className="font-mono text-slate-400 text-[10px]">{item.ipa}</span>
+                                                    <span className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 font-semibold">{item.pos}</span>
+                                                </div>
+                                                <div className="text-slate-500 mt-0.5">{item.meaning}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <button
+                                onClick={handleConfirmImport}
+                                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-sm font-bold transition shadow-lg shadow-emerald-600/20"
+                            >
+                                Xác nhận nạp {parsedPreview.filter(i => i.selected).length} từ vựng
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+
+        const ModalContainer = ({ modalState, closeModal, decks, setDecks, words, setWords }) => {
+            const { type, payload } = modalState;
+
+            // Form state for add/edit word
+            const [wordText, setWordText] = React.useState(payload?.word || '');
+            const [ipaText, setIpaText] = React.useState(payload?.ipa || '');
+            const [posText, setPosText] = React.useState(payload?.pos || 'noun');
+            const [meaningText, setMeaningText] = React.useState(payload?.meaning || '');
+            const [exampleText, setExampleText] = React.useState(payload?.example || '');
+            const [deckId, setDeckId] = React.useState(payload?.deckId || decks[0]?.id || '');
+
+            // Form state for new deck
+            const [deckTitle, setDeckTitle] = React.useState('');
+            const [deckDesc, setDeckDesc] = React.useState('');
+
+            const handleSaveWord = (e) => {
+                e.preventDefault();
+                if (type === 'editWord') {
+                    setWords(prev => prev.map(w => w.id === payload.id ? {
+                        ...w,
+                        word: wordText,
+                        ipa: ipaText,
+                        pos: posText,
+                        meaning: meaningText,
+                        example: exampleText,
+                        deckId
+                    } : w));
+                } else {
+                    const newWord = {
+                        id: `w-${Date.now()}`,
+                        deckId,
+                        word: wordText,
+                        ipa: ipaText,
+                        pos: posText,
+                        meaning: meaningText,
+                        example: exampleText,
+                        status: 'new',
+                        easeFactor: 2.5,
+                        interval: 0,
+                        repetition: 0,
+                        nextReviewDate: new Date().toISOString(),
+                        favorite: false
+                    };
+                    setWords(prev => [...prev, newWord]);
+                }
+                closeModal();
+            };
+
+            const handleSaveDeck = (e) => {
+                e.preventDefault();
+                const newDeck = {
+                    id: `deck-${Date.now()}`,
+                    title: deckTitle,
+                    description: deckDesc || 'Bộ từ vựng tùy chỉnh',
+                    category: 'Custom',
+                    color: 'from-purple-600 to-indigo-600'
+                };
+                setDecks(prev => [...prev, newDeck]);
+                closeModal();
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg p-6 space-y-5 shadow-2xl animate-fadeIn">
+
+                        {(type === 'addWord' || type === 'editWord') && (
+                            <form onSubmit={handleSaveWord} className="space-y-4">
+                                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                                    {type === 'editWord' ? 'Chỉnh sửa từ vựng' : 'Thêm từ vựng mới'}
+                                </h3>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 mb-1">Từ tiếng Anh (*)</label>
+                                        <input
+                                            required
+                                            type="text"
+                                            value={wordText}
+                                            onChange={(e) => setWordText(e.target.value)}
+                                            placeholder="vd: Resilient"
+                                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-indigo-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 mb-1">Phiên âm IPA</label>
+                                        <input
+                                            type="text"
+                                            value={ipaText}
+                                            onChange={(e) => setIpaText(e.target.value)}
+                                            placeholder="vd: /rɪˈzɪl.i.ənt/"
+                                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-indigo-500"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 mb-1">Từ loại</label>
+                                        <select
+                                            value={posText}
+                                            onChange={(e) => setPosText(e.target.value)}
+                                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none"
+                                        >
+                                            <option value="noun">Danh từ (noun)</option>
+                                            <option value="verb">Động từ (verb)</option>
+                                            <option value="adjective">Tính từ (adjective)</option>
+                                            <option value="adverb">Trạng từ (adverb)</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 mb-1">Bộ từ vựng</label>
+                                        <select
+                                            value={deckId}
+                                            onChange={(e) => setDeckId(e.target.value)}
+                                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none"
+                                        >
+                                            {decks.map(d => <option key={d.id} value={d.id}>{d.title}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Nghĩa tiếng Việt (*)</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        value={meaningText}
+                                        onChange={(e) => setMeaningText(e.target.value)}
+                                        placeholder="vd: Kiên cường, phục hồi nhanh"
+                                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-indigo-500"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Ví dụ câu minh họa</label>
+                                    <textarea
+                                        rows="2"
+                                        value={exampleText}
+                                        onChange={(e) => setExampleText(e.target.value)}
+                                        placeholder="vd: She is a resilient leader..."
+                                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-indigo-500 resize-none"
+                                    />
+                                </div>
+
+                                <div className="flex justify-end gap-3 pt-2">
+                                    <button type="button" onClick={closeModal} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold">Hủy</button>
+                                    <button type="submit" className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md">Lưu từ vựng</button>
+                                </div>
+                            </form>
+                        )}
+
+                        {type === 'addDeck' && (
+                            <form onSubmit={handleSaveDeck} className="space-y-4">
+                                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Tạo bộ từ vựng mới</h3>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Tên bộ từ (*)</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        value={deckTitle}
+                                        onChange={(e) => setDeckTitle(e.target.value)}
+                                        placeholder="vd: Từ vựng Chuyên ngành Marketing"
+                                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Mô tả ngắn</label>
+                                    <input
+                                        type="text"
+                                        value={deckDesc}
+                                        onChange={(e) => setDeckDesc(e.target.value)}
+                                        placeholder="vd: Các thuật ngữ phổ biến trong chạy quảng cáo..."
+                                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none"
+                                    />
+                                </div>
+
+                                <div className="flex justify-end gap-3 pt-2">
+                                    <button type="button" onClick={closeModal} className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold">Hủy</button>
+                                    <button type="submit" className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md">Tạo Bộ Từ</button>
+                                </div>
+                            </form>
+                        )}
+
+                    </div>
+                </div>
+            );
+        };
+
+
+        const rootElement = document.getElementById('root');
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<App />);
+
+    </script>
+</body>
+</html>
